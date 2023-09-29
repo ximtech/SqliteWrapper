@@ -9,3 +9,10 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+
+.idea
+/Tests/cmake-build-debug/
+/Tests/cmake-build-debug-mingw/
+/Tests/cmake-build-debug-wsl/
+/cmake-build-debug/
+/cmake-build-debug-coverage/
