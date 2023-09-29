@@ -1,6 +1,11 @@
 #pragma once
 
+#define SQLITE_QUERY_FORMAT_STRING_SIZE 16
+
 #include "BaseTestTemplate.h"
+
+#include "SqliteParameter.h"
+#include "SqliteQuery.h"
 #include "SqliteWrapper.h"
 
 
@@ -78,8 +83,11 @@ static MunitResult sqlLiteQueryStringTest(const MunitParameter params[], void *d
     assert_uint32(16 + 1, ==, str_3->capacity);
 
     // format
-    QueryString *str_4 = queryStringOf("Parameter test: %s, %d, %.3f", "one", 2, 3.333);
-    assert_string_equal("Parameter test: one, 2, 3.333", queryStringGetValue(str_4));
+    QueryString *str_4_1 = queryStringOf("%s, %d, %.3f", "one", 2, 3.333);
+    assert_string_equal("one, 2, 3.333", queryStringGetValue(str_4_1)); // should be enough space
+
+    QueryString *str_4_2 = queryStringOf("Parameter test: %s, %d, %.3f", "one", 2, 3.333);  // should overflow default size
+    assert_string_equal("Parameter test: one, 2, 3.333", queryStringGetValue(str_4_2));
 
     // named params
     str_DbValueMap *queryParams = SQL_PARAM_MAP("default", "one", "camelCaseParam", 2, "snake_case_param", 3, "hyphen-param", "four");
@@ -89,7 +97,8 @@ static MunitResult sqlLiteQueryStringTest(const MunitParameter params[], void *d
     deleteQueryString(str_1);
     deleteQueryString(str_2);
     deleteQueryString(str_3);
-    deleteQueryString(str_4);
+    deleteQueryString(str_4_1);
+    deleteQueryString(str_4_2);
     deleteQueryString(str_5);
 
     return MUNIT_OK;
@@ -149,7 +158,7 @@ static MunitResult sqlLiteFullTest(const MunitParameter params[], void *data) {
     assert_int(0, ==, rc);
 
     rc = executeUpdate(db, "INSERT INTO test VALUES (NULL, :int_val, :data_text, :decimal_param)",
-                       SQL_PARAM_MAP("int_val", 3, "data_text", "some other", "decimal_param", 54.345));
+                       SQL_PARAM_MAP("int_val", 3, "data_text", "some other", "decimal_param", 54.3456));
     assert_int(0, ==, rc);
 
     char *queryStr = "SELECT * FROM test WHERE value = :int_val";
@@ -167,13 +176,31 @@ static MunitResult sqlLiteFullTest(const MunitParameter params[], void *data) {
     assert_int(2, ==, value);
     assert_double_equal(1.2345, decVal, 4);
     assert_string_equal("test", dataStr);
-
     assert_false(nextResultSet(rs));    // should also finalize work
+    resultSetDelete(rs);
+
+    rs = executeQuery(db, "SELECT * FROM test WHERE value = :int_val", SQL_PARAM_MAP("int_val", 3));
+    assert_not_null(rs);
+    nextResultSet(rs);
+    id = rsGetIntByIndex(rs, 0);
+    value = rsGetIntByIndex(rs, 1);
+    dataStr = rsGetStringByIndex(rs, 2);
+    decVal = rsGetDoubleByIndex(rs, 3);
+
+    assert_true(rsGetColumnType(rs, "id") == DB_VALUE_INT);
+    assert_true(rsGetColumnType(rs, "value") == DB_VALUE_INT);
+    assert_true(rsGetColumnType(rs, "data") == DB_VALUE_TEXT);
+    assert_true(rsGetColumnType(rs, "param") == DB_VALUE_DOUBLE);
+
+    assert_int(2, ==, id);
+    assert_int(3, ==, value);
+    assert_double_equal(54.3456, decVal, 4);
+    assert_string_equal("some other", dataStr);
+    assert_false(nextResultSet(rs));    // should also finalize work
+    resultSetDelete(rs);
 
     rc = executeUpdate(db, "DROP TABLE test", NULL);
     assert_int(0, ==, rc);
-
-    resultSetDelete(rs);
     sqliteDbClose(db);
 
     return MUNIT_OK;

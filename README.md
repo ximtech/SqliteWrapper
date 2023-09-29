@@ -1,5 +1,10 @@
 # SqliteWrapper
 
+[![tests](https://github.com/ximtech/SqliteWrapper/actions/workflows/cmake-ci.yml/badge.svg)](https://github.com/ximtech/SqliteWrapper/actions/workflows/cmake-ci.yml)
+[![codecov](https://codecov.io/gh/ximtech/SqliteWrapper/graph/badge.svg?token=GG9AyPdAI2)](https://codecov.io/gh/ximtech/SqliteWrapper)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/3c9b762b968f4aada486294710288752)](https://app.codacy.com/gh/ximtech/SqliteWrapper/dashboard)
+
+
 Sqlite lightweight wrapper library written in C. Easy and lean to make queries and handle results
 
 ### Dependencies

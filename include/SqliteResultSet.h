@@ -20,5 +20,5 @@ int64_t rsGetI64ByIndex(ResultSet *resultSet, int columnIndex);
 const char *rsGetStringByIndex(ResultSet *resultSet, int columnIndex);
 double rsGetDoubleByIndex(ResultSet *resultSet, int columnIndex);
 
-DbValueType resultSetGetColumnType(ResultSet *resultSet, const char *columnName);
+DbValueType rsGetColumnType(ResultSet *resultSet, const char *columnName);
 void resultSetDelete(ResultSet *resultSet);

@@ -66,8 +66,8 @@ double rsGetDoubleByIndex(ResultSet *resultSet, int columnIndex) {
     return sqlite3_column_double(resultSet->stmt, columnIndex);
 }
 
-DbValueType resultSetGetColumnType(ResultSet *resultSet, const char *columnName) {
-    int columnIndex = (int) hashMapGet(resultSet->columnMap, columnName);
+DbValueType rsGetColumnType(ResultSet *resultSet, const char *columnName) {
+    int columnIndex = (long) hashMapGet(resultSet->columnMap, columnName);
     int columnType = sqlite3_column_type(resultSet->stmt, columnIndex);
     switch (columnType) {
         case SQLITE_INTEGER:
