@@ -1,12 +1,13 @@
 #include "SqliteQuery.h"
 
+#define DB_NAMED_PARAM_MAX_LENGTH 128
 #define DB_NULL_STR_VALUE "NULL"
 
 static char *allocateString(uint32_t capacity);
 static void doubleStringCapacity(QueryString *str, uint32_t capacity);
 static QueryString *newQueryStringFromBuffer(char *buffer, uint32_t size, uint32_t capacity);
 static char *copyStringValue(QueryString *str, uint32_t size);
-static uint32_t substringParamName(char *buffer, uint32_t length, const char *origString);
+static uint32_t substringParamName(char *buffer, const char *origString);
 char *intToString(int value, char* result, int base);
 
 
@@ -93,14 +94,14 @@ QueryString *queryStringOf(const char* format, ...) {
 QueryString *namedQueryString(const char *sql, str_DbValueMap *queryParams) {
     uint32_t sqlLength = sql != NULL ? strlen(sql) : 0;
     if (sql == 0) return NULL;
-    char buffer[128];
+    char buffer[DB_NAMED_PARAM_MAX_LENGTH];
 
     QueryString *query = newQueryStringWithSize((uint32_t) (sqlLength * 1.5));
     const char *sqlStr = sql;
     while (*sqlStr != '\0') {
         if (*sqlStr == ':') {
             sqlStr++;    // skip ':'
-            uint32_t paramLength = substringParamName(buffer, ARRAY_SIZE(buffer), sqlStr);
+            uint32_t paramLength = substringParamName(buffer, sqlStr);
             DbValue dbValue = str_DbValueMapGetOrDefault(queryParams, buffer, DB_NULL_VALUE());
 
             switch (dbValue.type) {
@@ -118,7 +119,7 @@ QueryString *namedQueryString(const char *sql, str_DbValueMap *queryParams) {
                 }
                     break;
                 case DB_VALUE_DOUBLE: {
-                    uint32_t length = snprintf(buffer, ARRAY_SIZE(buffer), "%f", DB_VALUE_AS_DOUBLE(dbValue));
+                    uint32_t length = snprintf(buffer, DB_NAMED_PARAM_MAX_LENGTH, "%f", DB_VALUE_AS_DOUBLE(dbValue));
                     queryStringAppend(query, buffer, length);
                 }
                     break;
@@ -181,9 +182,9 @@ static char *copyStringValue(QueryString *str, uint32_t size) {
     return data;
 }
 
-static uint32_t substringParamName(char *buffer, uint32_t length, const char *origString) {
+static uint32_t substringParamName(char *buffer, const char *origString) {
     uint32_t i = 0;
-    while (i < length) {
+    while (i < DB_NAMED_PARAM_MAX_LENGTH) {
         if (!isalnum((int) origString[i]) &&
             origString[i] != '_' &&
             origString[i] != '-') {
@@ -198,28 +199,29 @@ static uint32_t substringParamName(char *buffer, uint32_t length, const char *or
 }
 
 char *intToString(int value, char* result, int base) {
-    // check that the base if valid
-    if (base < 2 || base > 36) {
+    if (base < 2 || base > 36) {    // check that the base if valid
         *result = '\0';
         return result;
     }
 
-    char* ptr = result, *ptr1 = result, tmp_char;
-    int tmp_value;
-
+    char* ptr = result, *ptr1 = result;
+    int tmpValue;
     do {
-        tmp_value = value;
+        tmpValue = value;
         value /= base;
-        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp_value - value * base)];
+        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmpValue - value * base)];
     } while ( value );
 
     // Apply negative sign
-    if (tmp_value < 0) *ptr++ = '-';
+    if (tmpValue < 0) {
+        *ptr++ = '-';
+    }
     *ptr-- = '\0';
+
     while(ptr1 < ptr) {
-        tmp_char = *ptr;
+        char tmpChar = *ptr;
         *ptr--= *ptr1;
-        *ptr1++ = tmp_char;
+        *ptr1++ = tmpChar;
     }
     return result;
 }
