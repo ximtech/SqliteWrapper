@@ -59,7 +59,6 @@ static inline DbValue doubleDbValue(double value) {
 #define DB_VALUE(X)              \
     _Generic((X),                \
         int: intDbValue,         \
-        long: intDbValue,        \
         int64_t: intDbValue,     \
         default: nullDbValue,    \
         char*: strDbValue,       \
