@@ -2,8 +2,11 @@
 
 #include "SqliteQuery.h"
 
-
-typedef struct ResultSet ResultSet;
+typedef struct ResultSet {
+    sqlite3 *db;    // sqlite3* db is used to print errmsg
+    sqlite3_stmt *stmt;
+    HashMap columnMap;
+} ResultSet;
 
 
 // Create a cursor

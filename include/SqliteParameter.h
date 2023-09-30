@@ -32,7 +32,7 @@ typedef enum DbValueType {
 typedef struct DbValue {
     DbValueType type;
     union {
-        int intValue;
+        int64_t intValue;
         double doubleValue;
         void *blobValue;
         char *strValue;
@@ -40,29 +40,31 @@ typedef struct DbValue {
 } DbValue;
 
 
-static inline DbValue intVal(int value) {
+static inline DbValue intDbValue(int64_t value) {
     return DB_INT_VALUE(value);
 }
 
-static inline DbValue strVal(char *value) {
+static inline DbValue strDbValue(char *value) {
     return DB_STR_VALUE(value);
 }
 
-static inline DbValue nullVal(void *value) {
+static inline DbValue nullDbValue(void *value) {
     return DB_NULL_VALUE();
 }
 
-static inline DbValue doubleVal(double value) {
+static inline DbValue doubleDbValue(double value) {
     return DB_DOUBLE_VALUE(value);
 }
 
-#define DB_VALUE(X) \
-    _Generic((X),              \
-        int: intVal,            \
-        default: nullVal,       \
-        char*: strVal,          \
-        float: doubleVal,        \
-        double: doubleVal       \
+#define DB_VALUE(X)              \
+    _Generic((X),                \
+        int: intDbValue,         \
+        long: intDbValue,        \
+        int64_t: intDbValue,     \
+        default: nullDbValue,    \
+        char*: strDbValue,       \
+        float: doubleDbValue,    \
+        double: doubleDbValue    \
     )(X)
 
 

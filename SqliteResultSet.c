@@ -2,12 +2,6 @@
 
 #define NO_VALUE_INDEX (-1)
 
-struct ResultSet {
-    sqlite3 *db;    // sqlite3* db is used to print errmsg
-    sqlite3_stmt *stmt;
-    HashMap columnMap;
-};
-
 static ResultSet *mapColumnNames(ResultSet *resultSet);
 static inline int getIndexByColumnName(ResultSet *resultSet, const char *columnName);
 static const char *resultSetGetColumnName(ResultSet *resultSet, int column);

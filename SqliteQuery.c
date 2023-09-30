@@ -8,7 +8,7 @@ static void doubleStringCapacity(QueryString *str, uint32_t capacity);
 static QueryString *newQueryStringFromBuffer(char *buffer, uint32_t size, uint32_t capacity);
 static char *copyStringValue(QueryString *str, uint32_t size);
 static uint32_t substringParamName(char *buffer, const char *origString);
-char *intToString(int value, char* result, int base);
+char *intToString(int64_t value, char* result, int base);
 
 
 QueryString *newQueryString() {
@@ -198,14 +198,14 @@ static uint32_t substringParamName(char *buffer, const char *origString) {
     return i;
 }
 
-char *intToString(int value, char* result, int base) {
+char *intToString(int64_t value, char* result, int base) {
     if (base < 2 || base > 36) {    // check that the base if valid
         *result = '\0';
         return result;
     }
 
     char* ptr = result, *ptr1 = result;
-    int tmpValue;
+    int64_t tmpValue;
     do {
         tmpValue = value;
         value /= base;
