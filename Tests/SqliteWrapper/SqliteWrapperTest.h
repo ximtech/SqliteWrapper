@@ -1,9 +1,6 @@
 #pragma once
 
-#define SQLITE_QUERY_FORMAT_STRING_SIZE 16
-
 #include "BaseTestTemplate.h"
-
 #include "SqliteParameter.h"
 #include "SqliteQuery.h"
 #include "SqliteWrapper.h"

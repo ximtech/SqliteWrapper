@@ -5,6 +5,8 @@ set(CMAKE_C_STANDARD 99)
 
 set(ROOT_DIR "..")
 
+add_compile_definitions(SQLITE_QUERY_FORMAT_STRING_SIZE=16)
+
 include_directories(${ROOT_DIR}/ resources)
 
 get_filename_component(BUILD_DIRECTORY_NAME "${CMAKE_CURRENT_BINARY_DIR}" NAME)
