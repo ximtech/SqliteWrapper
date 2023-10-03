@@ -6,6 +6,8 @@ typedef struct ResultSet {
     sqlite3 *db;    // sqlite3* db is used to print errmsg
     sqlite3_stmt *stmt;
     HashMap columnMap;
+    int valueIndex;
+    Vector valueVec;
 } ResultSet;
 
 

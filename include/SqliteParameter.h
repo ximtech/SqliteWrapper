@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "sqlite3.h"
 #include "HashMap.h"
@@ -13,7 +14,7 @@
 
 
 #define DB_INT_VALUE(value) ((DbValue) {.type = DB_VALUE_INT, .as.intValue = (value)})
-#define DB_DOUBLE_VALUE(value) ((DbValue) {.type = DB_VALUE_DOUBLE, .as.doubleValue = (value)})
+#define DB_DOUBLE_VALUE(value) ((DbValue) {.type = DB_VALUE_REAL, .as.doubleValue = (value)})
 #define DB_NULL_VALUE(value) ((DbValue) {.type = DB_VALUE_NULL})
 #define DB_STR_VALUE(value) ((DbValue) {.type = DB_VALUE_TEXT, .as.strValue = (value)})
 
@@ -25,7 +26,7 @@ typedef enum DbValueType {
     DB_VALUE_NULL = 1,    // Value is NULL (or a pointer)
     DB_VALUE_TEXT,        // Value is a string
     DB_VALUE_INT,         // Value is an integer
-    DB_VALUE_DOUBLE,      // Value is a float number
+    DB_VALUE_REAL,        // Value is a float number
     DB_VALUE_BLOB         // Value is a blob
 } DbValueType;
 

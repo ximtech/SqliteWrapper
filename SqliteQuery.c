@@ -118,7 +118,7 @@ QueryString *namedQueryString(const char *sql, str_DbValueMap *queryParams) {
                     queryStringAppend(query, intAsStr, strlen(intAsStr));
                 }
                     break;
-                case DB_VALUE_DOUBLE: {
+                case DB_VALUE_REAL: {
                     uint32_t length = snprintf(buffer, DB_NAMED_PARAM_MAX_LENGTH, "%f", DB_VALUE_AS_DOUBLE(dbValue));
                     queryStringAppend(query, buffer, length);
                 }

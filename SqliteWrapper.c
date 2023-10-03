@@ -3,15 +3,13 @@
 
 static sqlite3_stmt *tryExecuteStep(sqlite3 *db, const char *sql);
 static int tryExecuteUpdate(sqlite3 *db, const char *sql);
+static int sqliteValueMapperCallback(void *userData, int valueCount, char **values, char **tableColumnNames);
 
 
 sqlite3 *sqliteDbInit(const char* dbName) {
     sqlite3 *db;
+    sqlite3_initialize();
     sqlite3_open(dbName, &db);
-    if (db == NULL) {
-        return NULL;
-    }
-
     return db;
 }
 
@@ -26,6 +24,31 @@ ResultSet *executeQuery(sqlite3 *db, const char *sql, str_DbValueMap *queryParam
 int executeUpdate(sqlite3 *db, const char *sql, str_DbValueMap *queryParams) {
     QueryString *query = namedQueryString(sql, queryParams);
     int rc = tryExecuteUpdate(db, query->value);
+    deleteQueryString(query);
+    return rc;
+}
+
+ResultSet *executeCallbackQuery(sqlite3 *db, const char *sql, str_DbValueMap *queryParams) {
+    QueryString *query = namedQueryString(sql, queryParams);
+    char *errorMessage = NULL;
+    ResultSet *rs = newSqliteResultSet(db, NULL);
+    int rc = sqlite3_exec(db, query->value, sqliteValueMapperCallback, (void *) rs, &errorMessage);
+
+    if (rc != SQLITE_OK) {
+        sqlite3_free(errorMessage);
+        deleteQueryString(query);
+        resultSetDelete(rs);
+        return NULL;
+    }
+    deleteQueryString(query);
+    return rs;
+}
+
+int executeCallbackUpdate(sqlite3 *db, const char *sql, str_DbValueMap *queryParams) {
+    QueryString *query = namedQueryString(sql, queryParams);
+    char *errorMessage = NULL;
+    int rc = sqlite3_exec(db, query->value, NULL, NULL, &errorMessage);
+    sqlite3_free(errorMessage);
     deleteQueryString(query);
     return rc;
 }
@@ -101,4 +124,19 @@ static int tryExecuteUpdate(sqlite3 *db, const char *sql) {
     int rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     return rc != SQLITE_DONE ? rc : SQLITE_OK;
+}
+
+static int sqliteValueMapperCallback(void *userData, int valueCount, char **values, char **tableColumnNames) {
+    ResultSet *rs = (ResultSet *) userData;
+    initSingletonHashMap(&rs->columnMap, valueCount * 2);
+    initSingletonVector(&rs->valueVec, 128);
+    HashMap valueMap = getHashMapInstance(valueCount);
+
+    for (int i = 0; i < valueCount; i++) {
+        char *columnName = strdup(tableColumnNames[i]);
+        hashMapPut(valueMap, columnName, (MapValueType) strdup(values[i]));
+        hashMapPut(rs->columnMap, columnName, (MapValueType) i);
+    }
+    vectorAdd(rs->valueVec, valueMap);
+    return SQLITE_OK;
 }

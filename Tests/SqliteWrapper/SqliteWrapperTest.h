@@ -140,23 +140,22 @@ static MunitResult sqlLiteFullTest(const MunitParameter params[], void *data) {
     sqlite3 *db = sqliteDbInit("../resources/test.db");
     assert_not_null(db);
 
-   int rc = executeUpdate(db, "CREATE TABLE IF NOT EXISTS test"
-                      "("
+   int rc = executeUpdate(db, "CREATE TABLE IF NOT EXISTS test("
                       "    id    INTEGER PRIMARY KEY,"
                       "    value INTEGER,"
                       "    data  TEXT NOT NULL,"
                       "    param DOUBLE"
                       ")", NULL);
 
-    assert_int(0, ==, rc);
+    assert_int(SQLITE_OK, ==, rc);
 
     rc = executeUpdate(db, "INSERT INTO test VALUES (NULL, :int_val, :data_text, :decimal_param)",
                        SQL_PARAM_MAP("int_val", 2, "data_text", "test", "decimal_param", 1.2345));
-    assert_int(0, ==, rc);
+    assert_int(SQLITE_OK, ==, rc);
 
     rc = executeUpdate(db, "INSERT INTO test VALUES (NULL, :int_val, :data_text, :decimal_param)",
                        SQL_PARAM_MAP("int_val", 3, "data_text", "some other", "decimal_param", 54.3456));
-    assert_int(0, ==, rc);
+    assert_int(SQLITE_OK, ==, rc);
 
     char *queryStr = "SELECT * FROM test WHERE value = :int_val";
     str_DbValueMap *paramMap = SQL_PARAM_MAP("int_val", 2);
@@ -187,7 +186,7 @@ static MunitResult sqlLiteFullTest(const MunitParameter params[], void *data) {
     assert_true(rsGetColumnType(rs, "id") == DB_VALUE_INT);
     assert_true(rsGetColumnType(rs, "value") == DB_VALUE_INT);
     assert_true(rsGetColumnType(rs, "data") == DB_VALUE_TEXT);
-    assert_true(rsGetColumnType(rs, "param") == DB_VALUE_DOUBLE);
+    assert_true(rsGetColumnType(rs, "param") == DB_VALUE_REAL);
 
     assert_int(2, ==, id);
     assert_int(3, ==, value);
@@ -197,8 +196,60 @@ static MunitResult sqlLiteFullTest(const MunitParameter params[], void *data) {
     resultSetDelete(rs);
 
     rc = executeUpdate(db, "DROP TABLE test", NULL);
-    assert_int(0, ==, rc);
+    assert_int(SQLITE_OK, ==, rc);
     sqliteDbClose(db);
+
+    return MUNIT_OK;
+}
+
+static MunitResult sqlLiteCallbackTest(const MunitParameter params[], void *data) {
+    sqlite3 *db = sqliteDbInit("../resources/test.db");
+    assert_not_null(db);
+
+    int rc = executeCallbackUpdate(db, "CREATE TABLE IF NOT EXISTS test_1("
+                               "    id    INTEGER PRIMARY KEY,"
+                               "    value INTEGER,"
+                               "    data  TEXT NOT NULL,"
+                               "    param DOUBLE"
+                               ")", NULL);
+    assert_int(SQLITE_OK, ==, rc);
+
+    str_DbValueMap *paramMap = SQL_PARAM_MAP("int_val", 2, "data_text", "test", "decimal_param", 1.2345);
+    rc = executeCallbackUpdate(db, "INSERT INTO test_1 VALUES (NULL, :int_val, :data_text, :decimal_param)", paramMap);
+    assert_int(SQLITE_OK, ==, rc);
+
+    paramMap = SQL_PARAM_MAP("int_val", 3, "data_text", "some other", "decimal_param", 54.3456);
+    rc = executeCallbackUpdate(db, "INSERT INTO test_1 VALUES (NULL, :int_val, :data_text, :decimal_param)", paramMap);
+    assert_int(SQLITE_OK, ==, rc);
+
+    char *queryStr = "SELECT * FROM test_1 WHERE value = :int_val";
+    ResultSet *rs = executeCallbackQuery(db, queryStr, SQL_PARAM_MAP("int_val", 2));
+    assert_not_null(rs);
+
+    nextResultSet(rs);
+    int id = rsGetInt(rs, "id");
+    int64_t id_2 = rsGetI64(rs, "id");
+    int value = rsGetInt(rs, "value");
+    double decVal = rsGetDouble(rs, "param");
+    const char *dataStr = rsGetString(rs, "data");
+
+    assert_int(1, ==, id);
+    assert_int64(1, ==, id_2);
+    assert_int(2, ==, value);
+    assert_double_equal(1.2345, decVal, 4);
+    assert_string_equal("test", dataStr);
+    assert_false(nextResultSet(rs));    // should also finalize work
+    resultSetDelete(rs);
+
+    rc = executeCallbackUpdate(db, "DROP TABLE test_1", NULL);
+    assert_int(SQLITE_OK, ==, rc);
+    sqliteDbClose(db);
+
+    ResultSet *rs = executeCallbackQuery(db, "SELECT * FROM test WHERE id = :id", SQL_PARAM_MAP("id", 1));
+    if (rs == NULL) {
+        sqliteDbClose(db);
+    }
+
 
     return MUNIT_OK;
 }
@@ -208,6 +259,7 @@ static MunitTest sqlWrapperTests[] = {
         {.name =  "Query string test - should correctly create and format query string", .test = sqlLiteQueryStringTest},
         {.name =  "Metadata test - should correctly return db table column data", .test = sqlLiteTableMetadataTest},
         {.name =  "Full test - should correctly execute queries and get results", .test = sqlLiteFullTest},
+        {.name =  "Callback test - should correctly work same with callback functions", .test = sqlLiteCallbackTest},
         END_OF_TESTS
 };
 

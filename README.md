@@ -44,6 +44,21 @@ add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 target_link_libraries(${PROJECT_NAME}.elf SqliteWrapper)
 ```
 
+### ESP-IDF
+
+- Compatible with ESP32 Sqlite3 library: https://github.com/siara-cc/esp32-idf-sqlite3
+- Examples for esp-idf, how to set up file system: https://github.com/siara-cc/esp32-idf-sqlite3-examples
+
+***Note:*** Make sure that stack size is not less than `8k` otherwise select queries can fail:
+```c
+// sdkconfig.defaults
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8096
+
+// if queries is used in http handler functions
+httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+config.stack_size = 8096;
+```
+
 ## Usage
 
 ### Single header include
@@ -118,6 +133,43 @@ while (nextResultSet(rs)) {
 }
 
 executeUpdate(db, "DROP TABLE test", NULL);
+
+// Free resources
+resultSetDelete(rs);
+sqliteDbClose(db);
+```
+
+### Callback example
+
+Callback have almost identical API as with `Prepared Statements` and can be used in same manner.
+The main difference is that all received values is copied to `ResultSet` inner structure and freed in `resultSetDelete()` function.
+
+```c
+// Open a database file
+sqlite3 *db = sqliteDbInit("embedded.db");
+if (db == NULL) {
+    return;
+}
+
+int rc = executeCallbackUpdate(db, "CREATE TABLE test (id INTEGER, content)", NULL);
+if (rc != SQLITE_OK) {
+    sqliteDbClose(db);
+}
+
+// Insert values to the table using named params
+executeCallbackUpdate(db, "INSERT INTO test VALUES (:id, :content)", SQL_PARAM_MAP("id", 1, "content", "Hello, World from test"));
+// Get values from DB
+ResultSet *rs = executeCallbackQuery(db, "SELECT * FROM test WHERE id = :id", SQL_PARAM_MAP("id", 1));
+
+// 'ResultSet' iterator stay same as in previous example
+while (nextResultSet(rs)) {
+    int id = rsGetInt(rs, "id");
+    const char *content = rsGetString(rs, "content");
+
+    printf("Id: [%d], Content: [%s]\n", id, content);
+}
+
+executeCallbackUpdate(db, "DROP TABLE test", NULL);
 
 // Free resources
 resultSetDelete(rs);
