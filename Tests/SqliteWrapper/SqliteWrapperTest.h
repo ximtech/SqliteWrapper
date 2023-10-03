@@ -245,12 +245,6 @@ static MunitResult sqlLiteCallbackTest(const MunitParameter params[], void *data
     assert_int(SQLITE_OK, ==, rc);
     sqliteDbClose(db);
 
-    ResultSet *rs = executeCallbackQuery(db, "SELECT * FROM test WHERE id = :id", SQL_PARAM_MAP("id", 1));
-    if (rs == NULL) {
-        sqliteDbClose(db);
-    }
-
-
     return MUNIT_OK;
 }
 
